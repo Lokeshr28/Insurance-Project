@@ -1,0 +1,166 @@
+import numpy as np 
+import pandas as pd
+import pickle
+import streamlit as st
+
+# Load the trained model
+loaded_model = pickle.load(open("C:/Users/Naresh/OneDrive/Desktop/Insurance project/insurance_trained_model.sav", 'rb'))
+
+# Custom CSS for colorful styling
+st.markdown("""
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(90deg, #f3ec78, #af4261); /* Gradient background */
+            color: #fff;
+        }
+        .main-header {
+            text-align: center;
+            font-size: 45px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px #000000;
+        }
+        .sub-header {
+            text-align: center;
+            font-size: 18Spx;
+            color: #ffffff;
+            margin-bottom: 30px;
+        }
+        .section-header {
+            color: #f9f871;
+            font-weight: bold;
+            margin-top: 20px;
+            font-size: 24px;
+        }
+        .stButton button {
+            background-color: #6c63ff !important;
+            color: white !important;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+        }
+        .st-success {
+            background-color: #28a745 !important;
+            color: white !important;
+            font-size: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .st-warning {
+            background-color: #ffc107 !important;
+            color: black !important;
+            font-size: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        img {
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px #000;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Header with a banner image
+st.image("https://via.placeholder.com/1500x300?text=Attorney+Prediction+App", use_column_width=True)
+st.markdown('<div class="main-header">Attorney Appointment Predictor</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Powered by Machine Learning to Enhance Decision-Making!</div>', unsafe_allow_html=True)
+
+# Description section
+st.markdown("""
+### Project Description
+This application predicts whether an attorney should be appointed for an insurance claim based on various factors. 
+By analyzing interaction variables, the model delivers accurate probabilities and decisions.
+Use this tool for:
+- Inputting claim details
+- Generating interaction variables automatically
+- Receiving actionable predictions
+
+Business Objective:
+The primary goal of this project is to build a predictive model that determines whether an attorney will be involved in an insurance claim based on various claim-related factors. This prediction enables insurance companies to:
+
+Optimize their claim processing workflows.
+Reduce legal costs by identifying claims likely to involve attorneys.
+Strategically allocate resources for improved efficiency.
+
+TKey features include:
+
+ATTORNEY: Target variable indicating attorney involvement (1 = Yes, 0 = No).
+
+CLMSEX: Gender of the claimant (1 = Male, 0 = Female).
+
+CLMINSUR: Whether the claimant was insured at the time of the accident (1 = Yes, 0 = No).
+
+SEATBELT: Indicates if the claimant was wearing a seatbelt during the accident (1 = Yes, 0 = No).
+
+LOSS: The financial loss associated with the claim.
+
+Accident_Severity: Categorical variable describing the severity of the accident (Minor, Moderate, Severe).
+
+Policy_Type: The type of insurance policy (Comprehensive, Third-Party).
+
+Settlement_Amount: The amount paid after settlement.
+""")
+
+# Input section
+st.markdown('<div class="section-header">Enter Input Variables</div>', unsafe_allow_html=True)
+
+# New variables for ATTORNEY, CLMSEX, SEATBELT
+CLMSEX = st.number_input("CLMSEX", value=1.0, step=1.0)
+SEATBELT = st.number_input("SEATBELT", value=1.0, step=1.0)
+
+
+CLMINSUR = st.number_input("CLMINSUR", value=1.0, step=0.1)
+Accident_Severity = st.number_input("Accident Severity", value=1.0, step=0.1)
+Claim_Approval_Status = st.number_input("Claim Approval Status", value=1, step=1)
+Settlement_Amount = st.number_input("Settlement Amount", value=0.146130, step=0.01)
+Policy_Type = st.number_input("Policy Type", value=1.0, step=0.1)
+Driving_Record = st.number_input("Driving Record", value=0.0, step=0.1)
+
+
+# Create interaction terms based on user inputs
+
+CLMSEX_squared = CLMSEX ** 2
+
+CLMINSUR_SEATBELT = CLMINSUR * SEATBELT
+Accident_Severity_Policy_Type = Accident_Severity * Policy_Type
+Settlement_Amount_Policy_Type = Settlement_Amount / (Policy_Type + 0.000001)
+
+# Input data dictionary
+input_data = {
+    'CLMINSUR': [CLMINSUR],
+    'Accident_Severity': [Accident_Severity],
+    'Claim_Approval_Status': [Claim_Approval_Status],
+    'Settlement_Amount': [Settlement_Amount],
+    'Policy_Type': [Policy_Type],
+    'Driving_Record': [Driving_Record],
+    'CLMINSUR_SEATBELT': [CLMINSUR_SEATBELT],
+    'Accident_Severity_Policy_Type': [Accident_Severity_Policy_Type],
+    'CLMSEX_squared': [CLMSEX_squared],
+    'Settlement_Amount_Policy_Type': [Settlement_Amount_Policy_Type],
+}
+
+# Convert input data to DataFrame
+X_input = pd.DataFrame(input_data)
+
+# Prediction
+if st.button("Predict"):
+    probabilities = loaded_model.predict_proba(X_input)
+    attorney_prob = probabilities[0][1]
+    appoint_attorney = int(attorney_prob > 0.5)
+
+    # Results Section
+    st.markdown('<div class="section-header">Prediction Results</div>', unsafe_allow_html=True)
+    st.write(f"Probability of appointing an attorney: **{attorney_prob:.2f}**")
+
+    if appoint_attorney:
+        st.markdown('<div class="st-success">Decision: Appoint an Attorney</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="st-warning">Decision: Do Not Appoint an Attorney</div>', unsafe_allow_html=True)
+
+# Footer image
+st.image("https://via.placeholder.com/1500x100?text=Thank+You+for+Using+Our+App", use_column_width=True)
